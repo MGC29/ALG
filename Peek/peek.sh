@@ -1,7 +1,7 @@
 #this program outputs the first and last 3 lines of a file with three dots in between. 
 #if the file is empty or there are less than 3 lines, it just outputs a space or the total number of lines.
 
-#check if the argument is provided 
+#check if the argument is provided and if it is that it is a readable file. 
 check_input(){
 if [ -z "$1" ]; then
     echo "Error: you are missing the first argument."

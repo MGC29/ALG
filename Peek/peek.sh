@@ -4,21 +4,21 @@
 #check if the argument is provided and if it is that it is a readable file. 
 check_input(){
 if [ -z "$1" ]; then
-    echo "Error: you are missing the first argument."
-    echo "Please provide a file to check."
+    echo "Error: you are missing the first argument." >&2
+    echo "Please provide a file to check." >&2
     exit 1; 
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: peek [FILE]"
-    echo "Prints the first and last three lines of a file with three dots in between."
+    echo "Usage: peek [FILE]" >&2
+    echo "Prints the first and last three lines of a file with three dots in between." >&2
     exit 1; 
 elif [ ! -e "$1" ]; then
-    echo "Error: $1 does not exist."
+    echo "Error: $1 does not exist." >&2
     exit 1;
 elif [ ! -f "$1" ]; then 
-    echo "Error: $1 is not a file."
+    echo "Error: $1 is not a file." >&2
     exit 1;
 elif [ ! -r "$1" ]; then 
-    echo "Error: $1 is not readable. Check file permissions."
+    echo "Error: $1 is not readable. Check file permissions." >&2
     exit 1;
 fi
 }

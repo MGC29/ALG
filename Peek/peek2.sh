@@ -1,16 +1,16 @@
 # This file outputs the first and last number of required lines of a file with three dots in between. 
-# In case the 
+# In case the file is empty or there are less than 3 lines, it just outputs blank spaces or the total number of lines.
 
 #This function checks that the argument exists and is a readable file. 
 check_if_file(){
 if [ ! -e "$1" ]; then
-    echo "Error: $1 does not exist."
+    echo "Error: $1 does not exist." >&2
     exit 1
 elif [ ! -f "$1" ]; then 
-    echo "Error: $1 is not a file."
+    echo "Error: $1 is not a file." >&2
     exit 1
 elif [ ! -r "$1" ]; then 
-    echo "Error: $1 is not readable. Check file permissions."
+    echo "Error: $1 is not readable. Check file permissions." >&2
     exit 1
 fi
 }
@@ -18,7 +18,7 @@ fi
 #This function checks that the argument is zero or a positive integer.
 check_if_number(){
 if [[ ! "$1" =~ ^[0-9]+$ ]]; then
-    echo "The second argument has to be zero or a positive integer."
+    echo "The second argument has to be zero or a positive integer." >&2
     exit 1
 fi
 }
@@ -26,8 +26,8 @@ fi
 #This function checks that both arguments (fle and number) are present and correct. 
 check_input(){
 if [ -z "$1" ]; then
-    echo "Error: you are missing the first argument."
-    echo "Please provide a file to check."
+    echo "Error: you are missing the first argument." >&2
+    echo "Please provide a file to check." >&2
     exit 1
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: peek [FILE] [NUMBER]"
@@ -39,8 +39,8 @@ else
 fi
 
 if [ -z "$2" ]; then
-    echo "Error: you are missing the second argument."
-    echo "Please provide a number of lines to print."
+    echo "Error: you are missing the second argument." >&2
+    echo "Please provide a number of lines to print." >&2
     exit 1
 else 
     check_if_number $2
@@ -51,5 +51,3 @@ check_input $1 $2
 head -n $2 $1 
 echo "..."
 tail -n $2 $1
-
-#TO CHECK: it is not outputing the error messages as standard error but as standard output. 

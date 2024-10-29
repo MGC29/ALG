@@ -1,6 +1,7 @@
 # This file outputs the first and last number of required lines of a file with three dots in between.
 # If the number of lines is not stated, it prints 3 lines by default 
-# In case the file is empty or there are less than stated number of lines, it just outputs blank spaces or the total number of lines.
+# If the file is empty it just outputs the three dots.
+# If the total number of lines is less than or equal to 2*number it just prints the whole file. 
 
 #This function checks that the argument exists and is a readable file. 
 check_if_file(){
@@ -35,7 +36,8 @@ elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: peek [FILE] [NUMBER]"
     echo "Prints the first and last NUMBER of lines of the FILE with three dots in between."
     echo "If the NUMBER is not stated, it prints 3 lines by default."
-    echo "If NUMBER is 0, it just prints the three dots. If NUMBER is higher than the number of lines in FILE, it prints the maximum number of lines."
+    echo "If NUMBER is 0, it just prints the three dots." 
+    echo "If the number of lines in FILE is less than or equal to 2*NUMBER, then it prints the whole file."
     exit 1
 else
     check_if_file $1
@@ -51,10 +53,14 @@ if [[ -z "$2" ]]; then
     head -n 3 $1 
     echo "..."
     tail -n 3 $1
+elif [[ $(cat $1 | wc -l) -le $((2 * $2)) ]]; then
+    cat $1
 else
     head -n $2 $1 
     echo "..."
     tail -n $2 $1    
 fi 
+
+
 
 

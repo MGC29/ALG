@@ -14,7 +14,7 @@
 
 check_args(){
     if [[ -d $1 ]]; then 
-        if [[ $DIR == '.' ]]; then 
+        if [[ $DIR == $(pwd) ]]; then 
             if [[ -r $1 ]]; then
                 DIR=$1
             else
@@ -32,15 +32,14 @@ check_args(){
         else echo "You have provided two number of lines to check. By default the first one will be used." >&2
         fi
     else 
-        echo "The program only takes two arguments: the directory to check and the number of lines to print. "
-        echo "The argument" $1 "is incorrect."
+        echo "The program only takes two arguments: the directory to check and the number of lines to print." >&2
+        echo "The argument" $1 "is incorrect." >&2
         exit 1
     fi 
 }
 
-DIR="."
+DIR=$(pwd)
 N_LINES=0
-FILE_NAMES=""
 
 # Here we check that the provided arguments are adequate:
 #   1. That there are no more than 2 arguments.
@@ -54,6 +53,11 @@ if [[ $# -gt 2 ]]; then
         done
 fi
 
+# Here we print a small message that specifies the directory and number of lines 
+echo "Analyzing FASTA files from directory" $DIR
+echo "The number of lines that will be printed is" $N_LINES
+echo
+
 # Here we obtain the number of FASTA files in our directory. 
 NUM_FILES=$(find $DIR -name "*.fasta" -or -name "*.fa" -type f 2>/dev/null | wc -l) 
 if [[ NUM_FILES -eq 0 ]]; then 
@@ -65,15 +69,23 @@ if [[ NUM_FILES -eq 0 ]]; then
         echo "I have found" $NUM_FILES "fasta files in this directory."
 fi
 
-# Here we obtain a list with the names of the readable FASTA files 
-for FILE in $(find $DIR -name "*.fasta" -or -name "*.fa" -type f 2>/dev/null); do 
-    if [[ -r $FILE ]]; then 
-        FILE_NAMES+="$FILE "
-    fi 
-done 
+
+# Here we store the names of the FASTA files
+FIND_FILES=$(find $DIR -name "*.fasta" -or -name "*.fa" -type f 2>/dev/null)
 
 # Here we get the unique IDs from our files 
-FASTA_ID=$(cat $FILE_NAMES | grep ">" | sort | uniq -c | wc -l)
-echo "There are a total of" $FASTA_ID "unique FASTA IDs"
+FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ">" | sort | uniq -c | wc -l)
+echo "There are a total of" $FASTA_ID "unique FASTA IDs."
+echo
 
-
+# Here we print the information for each file 
+for FILE in $FIND_FILES; do
+    echo "=== *** ANALIZING" $FILE "*** ===" 
+    if [[ -r $FILE ]]; then
+        
+    else
+        echo "File" $FILE "can not be read and will be skipped." >&2
+        echo "Please check permissions and try again." >&2
+    fi
+    echo 
+done

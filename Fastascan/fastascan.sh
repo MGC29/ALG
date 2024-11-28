@@ -6,8 +6,8 @@
     # how many unique fasta IDs (i.e. the first words of fasta headers) they contain in total (DONE? ASK)
     # for each file:
     # print a nice header including filename; and:
-        # whether the file is a symlink or not
-        # how many sequences there are inside
+        # whether the file is a symlink or not (DONE, must check if original file has access)
+        # how many sequences there are inside (DONE? ask if all fata ids will have a sequence)
         # the total sequence length in each file, i.e. the total number of amino acids or nucleotides of all sequences in the file. NOTE: gaps "-", spaces, newline characters should not be counted
         # Extra points: determine if the file is nucleotide or amino acids based on their content, and print a label to indicate this in this header
         # next, if the file has 2N lines or fewer, then display its full content; if not, show the first N lines, then "...", then the last N lines. If N is 0, skip this step.
@@ -58,8 +58,11 @@ echo "Analyzing FASTA files from directory" $DIR
 echo "The number of lines that will be printed is" $N_LINES
 echo
 
+# Here we store the names of all the FASTA files we can access.
+FIND_FILES=$(find $DIR -name "*.fasta" -or -name "*.fa" -type f -or -type l 2>/dev/null)
+
 # Here we obtain the number of FASTA files in our directory. 
-NUM_FILES=$(find $DIR -name "*.fasta" -or -name "*.fa" -type f 2>/dev/null | wc -l) 
+NUM_FILES=$(echo "$FIND_FILES"| wc -l) 
 if [[ NUM_FILES -eq 0 ]]; then 
     echo "I haven't found any fasta files in this directory."
     exit 0
@@ -68,10 +71,6 @@ if [[ NUM_FILES -eq 0 ]]; then
     else 
         echo "I have found" $NUM_FILES "fasta files in this directory."
 fi
-
-
-# Here we store the names of the FASTA files
-FIND_FILES=$(find $DIR -name "*.fasta" -or -name "*.fa" -type f 2>/dev/null)
 
 # Here we get the unique IDs from our files 
 FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ">" | sort | uniq -c | wc -l)
@@ -82,7 +81,13 @@ echo
 for FILE in $FIND_FILES; do
     echo "=== *** ANALIZING" $FILE "*** ===" 
     if [[ -r $FILE ]]; then
-        
+        if [[ -h $FILE ]]; then 
+            echo $FILE "is a symlink."
+        else 
+            echo $FILE "is not a symlink."
+        fi
+        NUM_SEQ=$(grep ">" $FILE | wc -l)
+        echo "This file contains a total of" $NUM_SEQ "sequences."
     else
         echo "File" $FILE "can not be read and will be skipped." >&2
         echo "Please check permissions and try again." >&2

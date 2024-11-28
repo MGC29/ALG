@@ -3,15 +3,25 @@
     # 2. a number of lines, here called N (default: 0)
 # The report should include this information:
     # how many such files there are (DONE)
-    # how many unique fasta IDs (i.e. the first words of fasta headers) they contain in total (DONE? ASK)
+    # how many unique fasta IDs (i.e. the first words of fasta headers) they contain in total (DONE)
     # for each file:
-    # print a nice header including filename; and:
+    # print a nice header including filename; and: (DONE)
         # whether the file is a symlink or not (DONE, must check if original file has access)
-        # how many sequences there are inside (DONE? ask if all fata ids will have a sequence)
+        # how many sequences there are inside (DONE)
         # the total sequence length in each file, i.e. the total number of amino acids or nucleotides of all sequences in the file. NOTE: gaps "-", spaces, newline characters should not be counted
         # Extra points: determine if the file is nucleotide or amino acids based on their content, and print a label to indicate this in this header
         # next, if the file has 2N lines or fewer, then display its full content; if not, show the first N lines, then "...", then the last N lines. If N is 0, skip this step.
 
+# This function prints a header that takes into account the terminal size. 
+header(){
+    NAME_SPACE=$(( $(echo $1 | wc -m) - 1 ))
+    TERMINAL_SPACE=$(tput cols)
+    COL_SPACE=$(( (($TERMINAL_SPACE - $NAME_SPACE) / 2) - 1 ))
+    COLS=$(printf "%*s" $COL_SPACE | tr ' ' '=')
+    echo $COLS $1 $COLS
+}
+
+# This function checks that the argument provided is correct. 
 check_args(){
     if [[ -d $1 ]]; then 
         if [[ $DIR == $(pwd) ]]; then 
@@ -38,6 +48,25 @@ check_args(){
     fi 
 }
 
+# This function checks if the file is a symlink.
+check_symlink(){
+    if [[ -h $1 ]]; then 
+        echo $1 "is a symlink."
+    else 
+        echo $1 "is not a symlink."
+    fi
+}
+
+# This function counts the number of sequences in a file
+number_sequences(){
+    NUM_SEQ=$(grep ">" $FILE | wc -l)
+    if [[ $NUM_SEQ -eq 1 ]]; then 
+        echo "This file contains 1 sequence."
+    else 
+        echo "This file contains" $NUM_SEQ "sequences." 
+    fi
+}
+
 DIR=$(pwd)
 N_LINES=0
 
@@ -53,7 +82,11 @@ if [[ $# -gt 2 ]]; then
         done
 fi
 
+echo 
+header FASTASCAN
+
 # Here we print a small message that specifies the directory and number of lines 
+echo 
 echo "Analyzing FASTA files from directory" $DIR
 echo "The number of lines that will be printed is" $N_LINES
 echo
@@ -73,24 +106,30 @@ if [[ NUM_FILES -eq 0 ]]; then
 fi
 
 # Here we get the unique IDs from our files 
-FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ">" | sort | uniq -c | wc -l)
+FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ">" | awk -F' ' '{print $1}' | sort | uniq -c | wc -l)
 echo "There are a total of" $FASTA_ID "unique FASTA IDs."
 echo
 
 # Here we print the information for each file 
 for FILE in $FIND_FILES; do
-    echo "=== *** ANALIZING" $FILE "*** ===" 
-    if [[ -r $FILE ]]; then
-        if [[ -h $FILE ]]; then 
-            echo $FILE "is a symlink."
-        else 
-            echo $FILE "is not a symlink."
-        fi
-        NUM_SEQ=$(grep ">" $FILE | wc -l)
-        echo "This file contains a total of" $NUM_SEQ "sequences."
-    else
+    header "ANALYZING $FILE"
+    # Here we check that the file is readable. 
+    if [[ ! -r $FILE ]]; then 
         echo "File" $FILE "can not be read and will be skipped." >&2
         echo "Please check permissions and try again." >&2
+        echo 
+        continue
     fi
+    check_symlink $FILE
+    # Here we check that the file is not empty
+    if [[ ! -s $FILE ]]; then 
+        echo "This file is empty. Following steps will be skipped." >&2
+        echo 
+        continue
+    fi
+    number_sequences $FILE
     echo 
 done
+
+header FASTASCAN
+echo 

@@ -1,16 +1,8 @@
-# The script must take two optional arguments (DONE)
-    # 1. the folder X where to search files (default: current folder); 
-    # 2. a number of lines, here called N (default: 0)
-# The report should include this information:
-    # how many such files there are (DONE)
-    # how many unique fasta IDs (i.e. the first words of fasta headers) they contain in total (DONE)
-    # for each file:
-    # print a nice header including filename; and: (DONE)
-        # whether the file is a symlink or not (DONE, must check if original file has access)
-        # how many sequences there are inside (DONE)
-        # the total sequence length in each file, i.e. the total number of amino acids or nucleotides of all sequences in the file. NOTE: gaps "-", spaces, newline characters should not be counted
-        # Extra points: determine if the file is nucleotide or amino acids based on their content, and print a label to indicate this in this header
-        # next, if the file has 2N lines or fewer, then display its full content; if not, show the first N lines, then "...", then the last N lines. If N is 0, skip this step.
+# TO DO : 
+# 1. What if the link leads to a directory.
+# 2. WHat if it is a binary file 
+# 3. When deciding protein vs dna, I should first filter ATGC from the sequence and then test if there are other residues 
+# 4 Finish help 
 
 # This function prints a header that takes into account the terminal size. 
 header(){
@@ -51,19 +43,47 @@ check_args(){
 # This function checks if the file is a symlink.
 check_symlink(){
     if [[ -h $1 ]]; then 
-        echo $1 "is a symlink."
+        echo "The file IS a symlink."
     else 
-        echo $1 "is not a symlink."
+        echo "The file is NOT a symlink."
     fi
 }
 
-# This function counts the number of sequences in a file
+# This function counts the number of sequences in a file. 
 number_sequences(){
-    NUM_SEQ=$(grep ">" $FILE | wc -l)
+    NUM_SEQ=$(grep -a ">" $FILE | wc -l)
     if [[ $NUM_SEQ -eq 1 ]]; then 
         echo "This file contains 1 sequence."
     else 
         echo "This file contains" $NUM_SEQ "sequences." 
+    fi
+}
+
+# This function takes all the sequences (filtering any gaps, spaces...) and returns its total lenght and 
+# whether it is a protein sequence, a DNA sequence or undeterminded. 
+DNA_or_prot_lenght(){
+    SEQ=$(grep -v -a ">" $1 | sed 's/[^a-zA-Z]//g' | tr -d '\n')
+    LENGHT=$(echo $SEQ | tr -d '\n' | wc -m)
+    if echo $SEQ | grep -a -q -i '^[ARNDCEQGHILKMFPSTWYVUOX]*$'; then
+        echo "This file contains protein sequences with a total lenght of" $LENGHT "amino acids." 
+    elif echo $SEQ | grep -a -q -i '^[ACGTUN]*$'; then 
+        echo "This file contains DNA sequences with a total lenght of" $LENGHT "nucleotides." 
+    else 
+        echo "It was not possible to determine if the file contains DNA or protein sequences."
+        echo "The total sequence lenght is" $LENGHT "residues."
+    fi
+}
+
+print_lines(){
+    TOTAL_LINES=$(cat $1 | wc -l)
+    if [[ $TOTAL_LINES -le $(( 2 * $N_LINES )) ]]; then
+        echo "Printing whole file"
+        cat $FILE
+    else
+        echo "Printing first and last" $N_LINES "lines."
+        head -n $N_LINES $1 
+        echo "..."
+        tail -n $N_LINES $1
     fi
 }
 
@@ -85,7 +105,7 @@ fi
 echo 
 header FASTASCAN
 
-# Here we print a small message that specifies the directory and number of lines 
+# Here we print a small message that specifies the directory and number of lines.
 echo 
 echo "Analyzing FASTA files from directory" $DIR
 echo "The number of lines that will be printed is" $N_LINES
@@ -105,12 +125,12 @@ if [[ NUM_FILES -eq 0 ]]; then
         echo "I have found" $NUM_FILES "fasta files in this directory."
 fi
 
-# Here we get the unique IDs from our files 
+# Here we get the unique IDs from our files.
 FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ">" | awk -F' ' '{print $1}' | sort | uniq -c | wc -l)
 echo "There are a total of" $FASTA_ID "unique FASTA IDs."
 echo
 
-# Here we print the information for each file 
+# Here we print the information for each file.
 for FILE in $FIND_FILES; do
     header "ANALYZING $FILE"
     # Here we check that the file is readable. 
@@ -121,13 +141,16 @@ for FILE in $FIND_FILES; do
         continue
     fi
     check_symlink $FILE
-    # Here we check that the file is not empty
+    # Here we check that the file is not empty. 
     if [[ ! -s $FILE ]]; then 
         echo "This file is empty. Following steps will be skipped." >&2
         echo 
         continue
     fi
     number_sequences $FILE
+    DNA_or_prot_lenght $FILE
+    # Here we check that the user wants to print some lines
+    if [[ $N_LINES -gt 0 ]]; then print_lines $FILE; fi 
     echo 
 done
 

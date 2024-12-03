@@ -123,7 +123,7 @@ echo
 FIND_FILES=$(find $DIR -name "*.fasta" -or -name "*.fa" -type f -or -type l 2>/dev/null)
 
 # Here we obtain the number of FASTA files in our directory. 
-NUM_FILES=$(echo "$FIND_FILES"| wc -l) 
+NUM_FILES=$(( $(echo "$FIND_FILES" | wc -l) - 1 ))
 if [[ NUM_FILES -eq 0 ]]; then 
     echo "I haven't found any fasta files in this directory."
     exit 0

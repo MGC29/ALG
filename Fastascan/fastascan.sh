@@ -1,10 +1,4 @@
-# TO DO : 
-# 1. What if the link leads to a directory.
-# 2. WHat if it is a binary file 
-# 3. When deciding protein vs dna, I should first filter ATGC from the sequence and then test if there are other residues 
-# 4 Finish help 
-
-# This function prints a header that takes into account the terminal size. 
+# This function prints a header taking into account the terminal size. 
 header(){
     NAME_SPACE=$(( $(echo $1 | wc -m) - 1 ))
     TERMINAL_SPACE=$(tput cols)
@@ -27,6 +21,15 @@ check_args(){
         fi
     elif [[ "$1" == "-h" || "$1" == "--help" ]]; then 
         echo "Usage: fastascan [DIRECTORY] [LINES]"
+        echo "By default the directory is the current working directory and the number of lines are 0."
+        echo "Searches for all .fasta and .fa files in the directory and subdirectories and prints some information about them: "
+        echo "  1. Total number of files."
+        echo "  2. Total number of unique fasta IDs."
+        echo "  3. If the file is a symlink or not."
+        echo "  4. The total number of sequences in a file."
+        echo "  5. The total sequence lenght and whether the file contains protein or DNA sequences."
+        echo "  6. If specified, prints the first and last number of lines. If the file contains less than two times the number of lines, it just print the whole file."
+        echo "WARNING! In case the file doesn't have permsisions or is empty, it will be skipped."
         exit 0    
     elif [[ $1 =~ ^[0-9]+$ ]]; then 
         if [[ $N_LINES -eq 0 ]]; then 
@@ -60,20 +63,25 @@ number_sequences(){
 }
 
 # This function takes all the sequences (filtering any gaps, spaces...) and returns its total lenght and 
-# whether it is a protein sequence, a DNA sequence or undeterminded. 
+# whether it is a protein sequence, a DNA sequence or undeterminded. To do this last part, it filters letters 
+# A,G,T,C,N which are the representations of the nucleotides. If the lenght of the filtered sequence is 0,
+# most likely the sequence is DNA, as it would be strange for a protein to be composed of only 4/5 amino acids. 
 DNA_or_prot_lenght(){
     SEQ=$(grep -v -a ">" $1 | sed 's/[^a-zA-Z]//g' | tr -d '\n')
     LENGHT=$(echo $SEQ | tr -d '\n' | wc -m)
-    if echo $SEQ | grep -a -q -i '^[ARNDCEQGHILKMFPSTWYVUOX]*$'; then
-        echo "This file contains protein sequences with a total lenght of" $LENGHT "amino acids." 
-    elif echo $SEQ | grep -a -q -i '^[ACGTUN]*$'; then 
-        echo "This file contains DNA sequences with a total lenght of" $LENGHT "nucleotides." 
+    MOD_SEQ=$(echo $SEQ | sed 's/[ACGTNacgtn]//g')
+    MOD_LENGHT=$(echo $MOD_SEQ | tr -d '\n' | wc -m)
+    if [[ $MOD_LENGHT -eq 0 ]]; then 
+        echo "This file most likely contains DNA sequences with a total lenght of" $LENGHT "nucleotides." 
+    elif echo $MOD_SEQ | grep -a -q -i '^[RDEQHILKMFPSWYVUOX]*$'; then
+        echo "This file most likely contains protein sequences with a total lenght of" $LENGHT "amino acids." 
     else 
         echo "It was not possible to determine if the file contains DNA or protein sequences."
         echo "The total sequence lenght is" $LENGHT "residues."
     fi
 }
 
+# This function prints the first and last number of lines in a file with three dots in between. 
 print_lines(){
     TOTAL_LINES=$(cat $1 | wc -l)
     if [[ $TOTAL_LINES -le $(( 2 * $N_LINES )) ]]; then
@@ -126,7 +134,7 @@ if [[ NUM_FILES -eq 0 ]]; then
 fi
 
 # Here we get the unique IDs from our files.
-FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ">" | awk -F' ' '{print $1}' | sort | uniq -c | wc -l)
+FASTA_ID=$(cat $FIND_FILES 2>/dev/null | grep ^">" -a | awk -F' ' '{print $1}' | sort | uniq -c | wc -l)
 echo "There are a total of" $FASTA_ID "unique FASTA IDs."
 echo
 
